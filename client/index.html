@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mission Control</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #0a0a0f 0%, #111118 100%);
+      min-height: 100vh;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      transition: all 0.3s ease;
+    }
+
+    .glass-panel:hover {
+      transform: scale(1.005);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 12px #10b981;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .text-primary { color: rgba(255, 255, 255, 0.9); }
+    .text-secondary { color: rgba(255, 255, 255, 0.5); }
+    .text-accent { color: #3b82f6; }
+    
+    .stat-number {
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: 'tnum';
+    }
+  </style>
+</head>
+<body>
+  <!-- Status Bar -->
+  <div class="glass-panel mx-4 mt-4 px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2">
+        <div class="status-dot"></div>
+        <span class="text-primary font-light text-lg">Clawd</span>
+      </div>
+      <div class="text-secondary text-sm">Claude Sonnet 4.5</div>
+    </div>
+    
+    <div class="flex items-center gap-6 text-sm">
+      <div class="text-secondary">
+        Uptime: <span id="uptime" class="text-primary stat-number">00:00:00</span>
+      </div>
+      <div class="text-secondary">
+        <span id="current-time" class="text-primary">--:--</span> GMT+1
+      </div>
+      <div class="text-secondary">
+        Today: <span id="cost-today" class="text-accent stat-number">$0.00</span> |
+        Week: <span id="cost-week" class="text-accent stat-number">$0.00</span> |
+        Month: <span id="cost-month" class="text-accent stat-number">$0.00</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Dashboard Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 mt-4">
+    
+    <!-- Agent Status Card -->
+    <div class="glass-panel p-6">
+      <h3 class="text-primary font-light text-lg mb-4">Agent Status</h3>
+      <div class="space-y-3">
+        <div>
+          <div class="text-secondary text-sm">Status</div>
+          <div class="text-accent font-medium" id="agent-status">Idle</div>
+        </div>
+        <div>
+          <div class="text-secondary text-sm">Current Task</div>
+          <div class="text-primary text-sm" id="current-task">None</div>
+        </div>
+        <div>
+          <div class="text-secondary text-sm">Last Activity</div>
+          <div class="text-primary text-sm stat-number" id="last-activity">--</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Token Usage Card -->
+    <div class="glass-panel p-6">
+      <h3 class="text-primary font-light text-lg mb-4">Token Usage (Today)</h3>
+      <div class="space-y-2 text-sm">
+        <div class="flex justify-between">
+          <span class="text-secondary">Input</span>
+          <span class="text-primary stat-number" id="tokens-input">0</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-secondary">Output</span>
+          <span class="text-primary stat-number" id="tokens-output">0</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-secondary">Cache Read</span>
+          <span class="text-primary stat-number" id="tokens-cache-read">0</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-secondary">Cache Write</span>
+          <span class="text-primary stat-number" id="tokens-cache-write">0</span>
+        </div>
+        <div class="flex justify-between pt-2 border-t border-white/10">
+          <span class="text-accent font-medium">Total Cost</span>
+          <span class="text-accent font-medium stat-number" id="tokens-cost">$0.00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Connected Channels Card -->
+    <div class="glass-panel p-6">
+      <h3 class="text-primary font-light text-lg mb-4">Connected Channels</h3>
+      <div class="space-y-2 text-sm" id="channels-list">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-2 h-2 rounded-full bg-green-500"></div>
+            <span class="text-primary">Telegram</span>
+          </div>
+          <span class="text-secondary text-xs">Active</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-2 h-2 rounded-full bg-yellow-500"></div>
+            <span class="text-primary">WhatsApp</span>
+          </div>
+          <span class="text-secondary text-xs">Not linked</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Skills Card -->
+    <div class="glass-panel p-6">
+      <h3 class="text-primary font-light text-lg mb-4">Active Skills</h3>
+      <div class="space-y-3">
+        <div>
+          <div class="text-secondary text-sm">Installed</div>
+          <div class="text-primary text-2xl font-light" id="skills-count">6</div>
+        </div>
+        <div class="text-secondary text-xs">
+          Top: weather, clawhub, healthcheck
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Cost Tracker Section -->
+  <div class="mx-4 mt-4 mb-4">
+    <div class="glass-panel p-6">
+      <h2 class="text-primary font-light text-2xl mb-6">💰 Cost Tracker</h2>
+      
+      <!-- Summary Cards -->
+      <div class="grid grid-cols-3 gap-4 mb-6">
+        <div class="p-4 rounded-lg" style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2);">
+          <div class="text-secondary text-sm mb-1">Today</div>
+          <div class="text-accent text-3xl font-light stat-number" id="cost-detail-today">$0.00</div>
+          <div id="budget-today-bar" class="mt-3"></div>
+        </div>
+        <div class="p-4 rounded-lg" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2);">
+          <div class="text-secondary text-sm mb-1">This Week</div>
+          <div class="text-emerald-400 text-3xl font-light stat-number" id="cost-detail-week">$0.00</div>
+        </div>
+        <div class="p-4 rounded-lg" style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2);">
+          <div class="text-secondary text-sm mb-1">This Month</div>
+          <div class="text-amber-400 text-3xl font-light stat-number" id="cost-detail-month">$0.00</div>
+          <div id="budget-month-bar" class="mt-3"></div>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-2 gap-6">
+        <!-- Model Breakdown -->
+        <div>
+          <h3 class="text-primary font-light text-lg mb-3">By Model</h3>
+          <div id="model-breakdown" class="space-y-2 text-sm">
+            <div class="text-secondary">No data yet</div>
+          </div>
+        </div>
+        
+        <!-- Feature Breakdown -->
+        <div>
+          <h3 class="text-primary font-light text-lg mb-3">By Feature</h3>
+          <div id="feature-breakdown" class="space-y-2 text-sm">
+            <div class="text-secondary">No data yet</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Hourly Chart -->
+      <div class="mt-6">
+        <h3 class="text-primary font-light text-lg mb-3">Last 24 Hours</h3>
+        <div id="hourly-chart" class="h-24 bg-white/5 rounded-lg p-2"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Projects Section -->
+  <div class="mx-4 mt-4 mb-8">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-primary font-light text-2xl">📋 Projects</h2>
+      <button id="btn-new-project" class="glass-panel px-4 py-2 text-sm text-primary hover:bg-white/10 transition-colors">
+        + New Project
+      </button>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      
+      <!-- Queued Column -->
+      <div class="glass-panel p-4">
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-secondary text-xs uppercase tracking-wider font-medium">Queued</div>
+          <div class="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-xs text-secondary" id="count-queued">0</div>
+        </div>
+        <div class="space-y-3 min-h-32" id="projects-queued">
+          <div class="text-secondary text-sm text-center py-8">No queued projects</div>
+        </div>
+      </div>
+
+      <!-- In Progress Column -->
+      <div class="glass-panel p-4" style="border-color: rgba(59, 130, 246, 0.3);">
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-accent text-xs uppercase tracking-wider font-medium">In Progress</div>
+          <div class="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center text-xs text-accent" id="count-in-progress">0</div>
+        </div>
+        <div class="space-y-3 min-h-32" id="projects-in-progress">
+          <div class="text-secondary text-sm text-center py-8">No active projects</div>
+        </div>
+      </div>
+
+      <!-- Completed Column -->
+      <div class="glass-panel p-4" style="border-color: rgba(16, 185, 129, 0.3);">
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-emerald-400 text-xs uppercase tracking-wider font-medium">Completed</div>
+          <div class="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs text-emerald-400" id="count-completed">0</div>
+        </div>
+        <div class="space-y-3 min-h-32" id="projects-completed">
+          <div class="text-secondary text-sm text-center py-8">No completed projects</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  
+  <!-- New Project Modal (hidden by default) -->
+  <div id="modal-new-project" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50">
+    <div class="glass-panel p-6 max-w-md w-full mx-4">
+      <h3 class="text-primary font-light text-xl mb-4">Create New Project</h3>
+      <form id="form-new-project">
+        <div class="space-y-4">
+          <div>
+            <label class="text-secondary text-sm block mb-1">Project Name</label>
+            <input type="text" name="name" required 
+                   class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-primary focus:border-accent focus:outline-none" 
+                   placeholder="e.g., LinkedIn Lead Generation">
+          </div>
+          <div>
+            <label class="text-secondary text-sm block mb-1">Description</label>
+            <textarea name="description" rows="3"
+                      class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-primary focus:border-accent focus:outline-none resize-none"
+                      placeholder="Brief description of the project..."></textarea>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="text-secondary text-sm block mb-1">Priority</label>
+              <select name="priority" class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-primary focus:border-accent focus:outline-none">
+                <option value="high">🔴 High</option>
+                <option value="medium" selected>🟡 Medium</option>
+                <option value="low">🟢 Low</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-secondary text-sm block mb-1">Status</label>
+              <select name="status" class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-primary focus:border-accent focus:outline-none">
+                <option value="queued" selected>Queued</option>
+                <option value="in_progress">In Progress</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="text-secondary text-sm block mb-1">Tags (comma-separated)</label>
+            <input type="text" name="tags" 
+                   class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-primary focus:border-accent focus:outline-none"
+                   placeholder="e.g., lead-gen, automation, client-work">
+          </div>
+        </div>
+        <div class="flex gap-3 mt-6">
+          <button type="submit" class="flex-1 bg-accent hover:bg-accent/80 text-white rounded-lg px-4 py-2 transition-colors">
+            Create Project
+          </button>
+          <button type="button" id="btn-cancel-project" class="flex-1 glass-panel hover:bg-white/10 text-secondary rounded-lg px-4 py-2 transition-colors">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/src/app.js"></script>
+</body>
+</html>
