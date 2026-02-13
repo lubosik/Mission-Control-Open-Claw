@@ -1,16 +1,21 @@
-import Database from 'better-sqlite3';
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+/**
+ * Data layer - uses in-memory store for Vercel/serverless compatibility.
+ * SQLite was removed: Vercel's read-only filesystem and stateless functions
+ * don't support persistent SQLite. For production persistence, add a
+ * remote DB (Postgres, MongoDB, etc.) and swap this implementation.
+ */
+import { projectStore, taskStore, costStore, activityStore, skillsStore, cronJobsStore, channelsStore } from './store.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const dbPath = join(__dirname, 'db', 'mission-control.db');
-const db = new Database(dbPath);
+export { projectStore, taskStore, costStore, activityStore, skillsStore, cronJobsStore, channelsStore };
 
-// Initialize schema
-const schema = readFileSync(join(__dirname, 'db', 'schema.sql'), 'utf-8');
-db.exec(schema);
-
-console.log('✅ Database initialized at:', dbPath);
+export const db = {
+  projects: projectStore,
+  tasks: taskStore,
+  costs: costStore,
+  activity: activityStore,
+  skills: skillsStore,
+  cronJobs: cronJobsStore,
+  channels: channelsStore
+};
 
 export default db;
